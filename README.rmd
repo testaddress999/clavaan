@@ -44,7 +44,7 @@ The `clavaan` package is specifically designed for analyzing censored data withi
 Install the latest release from CRAN:
 
 ```{r eval = F}
-devtools::install_github("sooyongl/clavaan")
+devtools::install_github("testaddress999/clavaan")
 ```
 
 <!-- The documentation is available at [here](https://sooyongl.github.io/clavaan/). -->

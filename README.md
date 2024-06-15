@@ -17,7 +17,7 @@ equation models.
 Install the latest release from CRAN:
 
 ``` r
-devtools::install_github("sooyongl/clavaan")
+devtools::install_github("testaddress999/clavaan")
 ```
 
 <!-- The documentation is available at [here](https://sooyongl.github.io/clavaan/). -->
