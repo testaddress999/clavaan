@@ -1,0 +1,147 @@
+---
+output: github_document
+---
+
+```{r setup, include=FALSE}
+# ---
+# output:
+#   html_document:
+#     highlight: py
+#     css: "style.css"
+#     code_folding: show
+#     toc: true
+#     toc_depth: 2
+#     toc_float:
+#       collapsed: false
+#       smooth_scroll: false
+# ---
+        
+knitr::opts_chunk$set(echo = TRUE, 
+                      eval = T,
+                      class.source="rsource",
+                      class.output="routput")
+# library(clavaan)
+
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "vignettes",
+  out.width = "100%"
+)
+
+options(tibble.print_min = 5, tibble.print_max = 5)
+```
+
+# `clavaan` 
+
+## Overview
+
+The `clavaan` package is specifically designed for analyzing censored data within the structural equation modeling framework. It is capable of handling right, left, or doubly-censored data. By estimating the censored mean and variance-covariance from the censored data, the package enables model fitting using the well-established `lavaan` package. This integration allows researchers to accurately analyze censored data and draw reliable conclusions from their structural equation models.
+
+
+## Install
+
+Install the latest release from CRAN:
+
+```{r eval = F}
+devtools::install_github("sooyongl/clavaan")
+```
+
+<!-- The documentation is available at [here](https://sooyongl.github.io/clavaan/). -->
+
+
+```{r}
+library(clavaan)
+library(lavaan)
+suppressPackageStartupMessages(library(tidyverse))
+```
+
+## Generate Latent growth curve model data
+
+To generate data based on the latent growth model with a mean intercept of 3 and a mean slope of 0.5 using the `lavaan` package, you can follow the below code:
+
+```{r}
+unc.data <- lavaan::simulateData('
+                     # Time indicators            
+                     I =~ 1*y1 + 1*y2 + 1*y3 + 1*y4 + 1*y5
+                     S =~ 0*y1 + 1*y2 + 2*y3 + 3*y4 + 4*y5
+
+                     # GROWTH MEANS
+                     I ~ 3*1
+                     S ~ 0.5*1
+                     
+                     # GROWTH Var-Covariance
+                     I ~~ 1*I + 0.2*S
+                     S ~~ 0.5*S
+                     ', 
+                     model.type = 'growth',
+                     sample.nobs = 500)
+```
+
+
+
+## Censore data
+
+To censor the generated data, you can use the `cenPoint()` function from the `clavaan` package, which allows you to set the proportion of censoring at each end. In this case, the data will be censored at 40% with 20% at each point. The code would look like this:
+
+```{r}
+censored_prop <- c(left = 0.2, right = 0.8)
+
+cen_points <- clavaan:::cenPoint(x = unc.data,
+                       lower_quant = censored_prop[1],
+                       upper_quant = censored_prop[2])
+
+
+cen.data <- clavaan:::cenData(unc.data, cen_points) %>%
+  data.frame() %>%
+  set_names(names(unc.data))
+```
+
+This will result in a censored dataset with 20% censoring at the lower end and 20% censoring at the upper end, totaling 40% censoring overall.
+
+## Compare typical MLE and GBIT {.tabset}
+
+To analyze the data using both MLE and GBIT, you can utilize the `growth()` function from the `lavaan` package for MLE, and the `cgrowth()` function from the `clavaan` package for GBIT. Employing these two methods will allow you to compare their performance and better understand the impact of censoring on your data.
+
+```{r}
+model =
+'I =~ 1*y1 + 1*y2 + 1*y3 + 1*y4 + 1*y5
+ S =~ 0*y1 + 1*y2 + 2*y3 + 3*y4 + 4*y5
+
+ I ~ 1
+ S ~ 1
+
+ I ~~ I + S
+ S ~~ S'
+```
+
+### clavaan
+<!-- <div class = "row"> -->
+<!-- <div class = "col-md-6"> -->
+```{r}
+cgrowth(model, data = cen.data, 
+        bounds = cen_points)%>%
+  summary()
+```
+<!-- </div> -->
+
+### lavaan with censored data
+<!-- <div class = "col-md-6"> -->
+```{r}
+growth(model,data = cen.data) %>%
+  summary()
+```
+<!-- </div> -->
+<!-- </div> -->
+
+### lavaan with original data
+```{r}
+growth(model,data = unc.data) %>%
+  summary()
+```
+
+
+```{r}
+sessionInfo()
+```
+
